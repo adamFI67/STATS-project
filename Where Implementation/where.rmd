@@ -1,0 +1,80 @@
+# The main question I want to answer regarding the where is whether do crimes occur more closer or father from the highway. The main 2 highwyas that run 
+
+```{r}
+# 1. LOAD LIBRARIES
+library(tigris)
+library(ggplot2)
+library(dplyr)
+library(sf)
+```
+
+Loading Data
+```{r}
+# 2. LOAD & PREP CRIME DATA
+master_analysis <- read.csv("../Dallas_Crimes_dallas_Website.csv")
+
+# We define what counts as Violent, Property, and Other based on UCR types
+crime_categorized <- master_analysis %>%
+  mutate(
+    zip_clean = as.character(as.integer(`Zip.Code`)),
+    category = case_when(
+      grepl("MURDER|RAPE|ROBBERY|ASSAULT", `UCR..2..Type`, ignore.case = TRUE) ~ "Violent",
+      grepl("THEFT|BURGLARY|VANDALISM|FRAUD|LARCENY|STOLEN", `UCR..2..Type`, ignore.case = TRUE) ~ "Property",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  filter(grepl("^75", zip_clean)) # Keep only DFW zips
+
+
+```
+
+Joining Dallas crimes table and data
+```{r}
+# 2. JOIN TO THE MAP
+map_final <- dallas_zips %>%
+  mutate(match_id = as.character(as.integer(ZCTA5CE20))) %>%
+  left_join(crime_summary, by = c("match_id" = "zip_clean")) %>%
+  # Only keep rows where we actually have crime data
+  filter(!is.na(total_incidents))
+```
+
+Plotting Data
+```{r}
+# 1. GENERATE THE ZOOMED PLOT
+ggplot(data = map_final) +
+  # Layer 1: The Heat Map
+  geom_sf(aes(fill = total_incidents), color = "white", size = 0.1) +
+  
+  # Using the Log scale to make the density clear
+  scale_fill_gradient(
+    low = "#e1f5fe", 
+    high = "#01579b", 
+    name = "Incidents",
+    trans = "log10"
+  ) +
+  
+  # Layer 2: THE ZOOM (The "Crop" tool)
+  # These coordinates are specific to the Dallas County area
+  coord_sf(xlim = c(-97.1, -96.5), 
+           ylim = c(32.5, 33.1),
+           expand = FALSE) + 
+  
+  # Styling
+  labs(
+    title = "Dallas County Crime Hotspots",
+    subtitle = "Incident Density by Zip Code (2020-2026)",
+    caption = "Source: DPD Open Data | UTD Data Science"
+  ) +
+  theme_void() + # Cleanest look for the final project
+  theme(
+    plot.title = element_text(face = "bold", size = 18, margin = margin(b=5)),
+    plot.margin = margin(10, 10, 10, 10)
+  )
+```
+
+
+```{r}
+class(master_analysis$Zip.Code)
+head(crime_summary$zip_clean)
+sum(!is.na(map_final$total_incidents))
+```

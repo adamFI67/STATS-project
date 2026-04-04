@@ -11,6 +11,7 @@ output:
 Our study focuses specifically on Crude Oil Prices as a high-frequency economic indicator. Unlike quarterly GDP or monthly Unemployment reports, oil prices fluctuate daily, providing a real-time 'stress test' for urban environments like Dallas.
 
 ```{r}
+getwd()
 # Loading all the required libararies
 library(ggplot2) # For plotting
 library(dplyr) # For signifigance test
@@ -20,7 +21,7 @@ library(lubridate) # For making program able to read dates from Dallas_Crimes da
 
 ```{r}
 # --- 2. LOAD & CLEAN OIL DATA ---
-oil_raw <- read.csv("Crude_Oil_Prices.csv")
+oil_raw <- read.csv("../Crude_Oil_Prices.csv")
 
 # Cleans dataset to make everything more readable
 oil_price_data <- oil_raw %>%
@@ -35,7 +36,7 @@ oil_median_value <- median(oil_price_data$price, na.rm = TRUE)
 
 ```{r}
 # --- 3. LOAD & CLEAN DALLAS CRIME DATA ---
-dallas_raw <- read.csv("Dallas_Crimes_dallas_Website.csv")
+dallas_raw <- read.csv("../Dallas_Crimes_dallas_Website.csv")
 
 # Turn 852k rows into a Daily Count
 daily_summary <- dallas_raw %>%
