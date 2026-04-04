@@ -95,7 +95,6 @@ ggplot(master_analysis, aes(x = oil_status, y = crime_volume, fill = oil_status)
     subtitle = "Welch Two-Sample T-Test | t-score = 5.57 | p < 0.0000001",
     x = "Oil Price Status (Split at Median: $71.68)",
     y = "Daily Reported Incidents",
-    caption = "Data: Dallas Open Data (N=852,447) & WTI Crude Spot Prices"
   ) +
   # 2. THE CUSTOM THEME (Making it look "Blow People Away" manually)
   theme_minimal(base_size = 14) +
