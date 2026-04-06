@@ -1,7 +1,17 @@
 # The main question I want to answer regarding the where is whether do crimes occur more closer or father from the highway. The main 2 highwyas that run 
 
 ```{r}
-# 1. LOAD LIBRARIES
+# 1. API CONFIGURATION (The Secure Way)
+library(dotenv)
+library(tidycensus)
+
+# Load the file from the parent directory
+load_dot_env(file = "../.env")
+
+# Now pull the key from the environment
+census_api_key(Sys.getenv("CENSUS_API_KEY"), install = TRUE)
+
+# 2. THE REST OF YOUR LIBRARIES
 library(tigris)
 library(ggplot2)
 library(dplyr)
