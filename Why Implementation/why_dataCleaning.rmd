@@ -7,6 +7,11 @@ output:
     latex_engine: xelatex
 ---
 
+Original Datasets:
+Oil Dataset: https://fred.stlouisfed.org/series/DCOILWTICO#
+Dallas Crimes Dataset: https://www.dallasopendata.com/Public-Safety/Police-Incidents/qv6i-rri7/about_data
+
+
 
 Our study focuses specifically on Crude Oil Prices as a high-frequency economic indicator. Unlike quarterly GDP or monthly Unemployment reports, oil prices fluctuate daily, providing a real-time 'stress test' for urban environments like Dallas.
 
