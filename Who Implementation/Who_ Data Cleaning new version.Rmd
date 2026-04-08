@@ -1,0 +1,119 @@
+---
+title: "Who's Invloved in Crimes In Dallas"
+author: "Rachel Zheng"
+date: "2026-04-08"
+output: pdf_document
+---
+
+
+## The main question I want to answer is who is most involved in crime incidents. This includes analyzing victims such as the type, race, gender,and ethnicity to understand patterns in crime involvement.
+
+```{r}
+# 1. LOAD LIBRARIES
+library(ggplot2)
+```
+
+Loading Data
+```{r}
+setwd("~/rmarkdown data")
+data <- read.csv("who.csv")
+
+head(data)
+```
+
+# Before Cleaning
+
+The dataset had several issues that needed to fixed. It's main issue was that it was missing or had unclear values in the victim type, gender, race, and ethnicity columns. Many entries were blank spaces such as "" which don't mean anything when analyzing. 
+
+```{r}
+#victim type before fixing anything
+ggplot(data, aes(x = Victim.Type)) +
+  geom_bar() +
+  labs(title = "Victim Type (Before Cleaning)")
+```
+
+```{r}
+#victim gender 
+ggplot(data, aes(x = Victim.Gender)) +
+  geom_bar() +
+  labs(title = "Gender (Before Cleaning)")
+```
+
+```{r}
+#victim race (have some blanks)
+ggplot(data, aes(x = Victim.Race)) +
+  geom_bar() +
+  labs(title = "Race (Before Cleaning)")
+```
+
+```{r}
+#Victim Ethnicity (lots of blanks too)
+ggplot(data, aes(x = Victim.Ethnicity)) +
+  geom_bar() +
+  labs(title = "Ethnicity (Before Cleaning)")
+```
+
+
+# Data Cleaning
+
+To fix the missing or " " sections, I removed the blank values from the dataset. This step was necessary because keeping these entries would make the graphs confusing and harder to understand. By removing unclear or incomplete data, the dataset became more consistent.
+
+```{r}
+clean_data <- data
+
+## remove blanks like ("") and replacing them with NA. 
+
+#type
+clean_data$Victim.Type[clean_data$Victim.Type == "" | clean_data$Victim.Type == " "] <- NA
+
+#gender
+clean_data$Victim.Gender[clean_data$Victim.Gender == "" | clean_data$Victim.Gender == " "] <- NA
+
+#race
+clean_data$Victim.Race[clean_data$Victim.Race == "" | clean_data$Victim.Race == " "] <- NA
+clean_data$Victim.Race[clean_data$Victim.Race == "H"] <- "Hispanic or Latino"
+clean_data$Victim.Race[clean_data$Victim.Race == "NH"] <- "Non-Hispanic or Latino"
+
+#ethnicity 
+clean_data$Victim.Ethnicity[clean_data$Victim.Ethnicity == "" | clean_data$Victim.Ethnicity == " "] <- NA
+
+```
+
+# After Cleaning
+
+After cleaning, the graphs of each variable were easier to understand. The results presented more of an accurate pattern in the data since only valid entries were included. I've also changed the angle of the text for the y-axis since some of the text were way too long. Overall, the cleaning process has improved the quality of the dataset and made the analysis more reliable.
+
+```{r}
+
+# check summary stats to see if missing things were removed
+summary(clean_data)
+colSums(is.na(clean_data))
+
+# type
+type_data <- clean_data[!is.na(clean_data$Victim.Type), ]
+
+ggplot(type_data, aes(x = Victim.Type, fill = Victim.Type)) +
+  geom_bar() +
+  labs(title = "Victim Type (After Cleaning)") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "k"))
+
+# gender
+gender_data <- clean_data[!is.na(clean_data$Victim.Gender), ]
+
+ggplot(gender_data, aes(x = Victim.Gender, fill = Victim.Gender)) +
+  geom_bar() +
+  labs(title = "Gender (After Cleaning)") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "k"))
+
+# race
+race_data <- clean_data[!is.na(clean_data$Victim.Race), ]
+
+ggplot(race_data, aes(x = Victim.Race, fill = Victim.Race)) +
+  geom_bar() +
+  labs(title = "Race (After Cleaning)") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "k"))
+
+# ethnicity
+ethnicity_data <- clean_data[!is.na(clean_data$Victim.Ethnicity), ]
+
+ggplot(ethnicity_data, aes(x = Victim.Ethnicity, fill = Victim.Ethnicity)) +
+  geom_bar() +
+  labs(title = "Ethnicity (After Cleaning)") + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = "k"))
+```
