@@ -190,9 +190,20 @@ generate_crime_map <- function(cat_name, fill_high, title_text) {
                color = "white", size = 7, shape = 21, fill = "white") +
     geom_image(data = highway_shields, aes(x = long, y = lat, image = image), size = 0.045) +
     
-    # Using log10 scale so high-crime outliers don't "wash out" the rest of the map
-    scale_fill_gradient(low = "#f0f9ff", high = fill_high, na.value = "white",
-                        name = "Rate per 1k", trans = "log10") +
+    # 4. Color Scale with Log Transformation
+    scale_fill_gradient(
+        low = "#f0f9ff", 
+        high = fill_high, 
+        na.value = "white",
+        name = "Rate per 1k", 
+        
+        # This is the "Log" part the professor asked for
+        trans = "log10", 
+        
+        # This keeps the scale "the same" (readable numbers instead of scientific notation)
+        breaks = c(0.1, 1, 10, 100, 1000),
+        labels = c("0.1", "1", "10", "100", "1000")
+    ) +
     
     scale_size_manual(values = c("Interstate" = 0.7, "Tollway" = 0.4, "US Highway" = 0.4), guide = "none") +
     coord_sf(xlim = c(-97.02, -96.58), ylim = c(32.62, 33.02), expand = FALSE) +
