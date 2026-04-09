@@ -11,7 +11,6 @@ output:
 Our study focuses specifically on Crude Oil Prices as a high-frequency economic indicator. Unlike quarterly GDP or monthly Unemployment reports, oil prices fluctuate daily, providing a real-time 'stress test' for urban environments like Dallas.
 
 ```{r}
-getwd()
 # Loading all the required libararies
 library(ggplot2) # For plotting
 library(dplyr) # For signifigance test
