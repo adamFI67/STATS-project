@@ -36,7 +36,7 @@ load_dot_env(file = "../.env")
 census_api_key(Sys.getenv("CENSUS_API_KEY"), install = TRUE, overwrite = TRUE)
 
 # loads table
-master_analysis <- read.csv("../Dallas_Crimes_dallas_Website.csv")
+master_analysis <- read.csv("../Dallas_Crimes_dallas_Website_For_Where.csv")
 
 ```
 
@@ -221,4 +221,86 @@ p1
 p2
 p3
 ```
+
+
+** Data Analysis **
+This is the part where I will be analyzing whether dallas crimes occur closer or father from the highway
+
+
+However, based on these graphs, one major problem that we can see is that at least one of the highways I listed touches almost every single zip code in Dallas County. Therefore doing a standard t-test where we have the compare zip codes that have a highway vs not having a highway won't help us here, because the data will be extremely skewed. 
+
+Instead, we can compare it to 2 or more highways in a zip code vs 1 or less highways in a zip code, because that will be more balanced and it will help decrease our bias. Since we plotted our heat maps relative to violent crime, property crime, and society crime, we will be conducting 3 seperate t-tests for each type of crime
+
+
+Setting up Data for our tests:
+```{r}
+# 1. Count unique highway intersections per Zip Code
+intersections_list <- st_intersects(map_base, dallas_highways)
+map_base$highway_count <- lengths(intersections_list)
+
+# 2. Create the Intensity Group (2+ vs 1 or less)
+map_base <- map_base %>%
+  mutate(intensity_group = ifelse(highway_count >= 2, "High_Intensity", "Low_Intensity"))
+
+# 3. Drop geometry for faster statistical processing
+base_stats_df <- map_base %>% st_drop_geometry()
+```
+
+1. Violent Crime:
+```{r}
+# Prepare Violent Crime Data
+violent_df <- base_stats_df %>%
+  left_join(filter(crime_summary, category == "Persons (Violent)"), by = c("match_id" = "zip_clean")) %>%
+  mutate(crime_rate = (total_incidents / population) * 1000) %>%
+  filter(!is.na(crime_rate))
+
+# Run T-Test
+t_violent <- t.test(crime_rate ~ intensity_group, data = violent_df)
+print(t_violent)
+
+# Run Wilcox Test, because t-test did not give p-value we wanted since our n-value which is the number of zip codes, is not too high at n = 65, which potentially skewed our results
+w_violent <- wilcox.test(crime_rate ~ intensity_group, data = violent_df)
+print(w_violent)
+```
+
+2. Property Crime:
+```{r}
+# Prepare Property Crime Data
+property_df <- base_stats_df %>%
+  left_join(filter(crime_summary, category == "Property"), by = c("match_id" = "zip_clean")) %>%
+  mutate(crime_rate = (total_incidents / population) * 1000) %>%
+  filter(!is.na(crime_rate))
+
+# Run T-Test
+t_property <- t.test(crime_rate ~ intensity_group, data = property_df)
+print(t_property)
+
+# Run Wilcox Test, because t-test did not give p-value we wanted since our n-value which is the number of zip codes, is not too high at n = 65, which potentially skewed our results
+w_property <- wilcox.test(crime_rate ~ intensity_group, data = property_df)
+print(w_property)
+```
+
+3. Society Crime:
+```{r}
+# Prepare Society Crime Data
+society_df <- base_stats_df %>%
+  left_join(filter(crime_summary, category == "Society"), by = c("match_id" = "zip_clean")) %>%
+  mutate(crime_rate = (total_incidents / population) * 1000) %>%
+  filter(!is.na(crime_rate))
+
+# Run T-Test
+t_society <- t.test(crime_rate ~ intensity_group, data = society_df)
+print(t_society)
+
+# Run Wilcox Test, because t-test did not give p-value we wanted since our n-value which is the number of zip codes, is not too high at n = 65, which potentially skewed our results
+w_society <- wilcox.test(crime_rate ~ intensity_group, data = society_df)
+print(w_society)
+```
+Okay so I tried the t-test and that was not giving me the p-value that I wanted, so I assumed the outliers were the problem. Then I also tried the Wilcoxon-test because that eliminates the problem of outliers, but even though for violent crime it was treding in the right direction, none of the values from either test were below 5%. Then I realized it is because my n-value, which is 65 zip codes, is too small so even though my theory may be true that you are safer farther away from a highway, I am not able to prove this because we are not getting the required data. Based on our observations, there is not a major difference in safety in regards to being closer or farther away from a highway from a statistical sense. However, from a practical standpoint, the crime rate doubled, but because our p values were never less than 5% we can't back it up.
+
+This is most likely a type II error (An error where there is most likely an effect in the real world but my test is not catching it).
+
+
+
+
 

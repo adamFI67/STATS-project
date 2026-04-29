@@ -20,7 +20,7 @@ library(lubridate) # For making program able to read dates from Dallas_Crimes da
 
 ```{r}
 # --- 2. LOAD & CLEAN OIL DATA ---
-oil_raw <- read.csv("../Crude_Oil_Prices.csv")
+oil_raw <- read.csv("Crude_Oil_Prices.csv")
 
 # Cleans dataset to make everything more readable
 oil_price_data <- oil_raw %>%
@@ -35,7 +35,7 @@ oil_median_value <- median(oil_price_data$price, na.rm = TRUE)
 
 ```{r}
 # --- 3. LOAD & CLEAN DALLAS CRIME DATA ---
-dallas_raw <- read.csv("../Dallas_Crimes_dallas_Website.csv")
+dallas_raw <- read.csv("../Dallas_Crimes_dallas_Website_For_Where.csv")
 
 # Turn 852k rows into a Daily Count
 daily_summary <- dallas_raw %>%
@@ -65,11 +65,25 @@ head(master_analysis)
 ```
 
 ```{r}
-# --- 6. THE GRAND FINALE: T-TEST ---
-# This proves if High Oil days have significantly different crime than Low Oil days
-t_result <- t.test(crime_volume ~ oil_status, data = master_analysis)
+# --- 6. REMOVE OUTLIERS (IQR METHOD) ---
+# Calculate Q1, Q3, and IQR for crime_volume
+Q1 <- quantile(master_analysis$crime_volume, 0.25)
+Q3 <- quantile(master_analysis$crime_volume, 0.75)
+IQR_val <- Q3 - Q1
 
-# --- 7. THE RESULTS FOR YOUR SLIDES ---
+# Define lower and upper bounds
+lower_bound <- Q1 - 1.5 * IQR_val
+upper_bound <- Q3 + 1.5 * IQR_val
+
+# Filter the dataset
+master_analysis_cleaned <- master_analysis %>%
+  filter(crime_volume >= lower_bound & crime_volume <= upper_bound)
+
+# --- 7. RUN T-TEST ON CLEANED DATA ---
+t_result <- t.test(crime_volume ~ oil_status, data = master_analysis_cleaned)
+print(t_result)
+
+# --- 8. THE RESULTS FOR YOUR SLIDES ---
 print(paste("The Median Oil Price is:", oil_median_value))
 print(t_result)
 ```
@@ -81,22 +95,22 @@ print(t_result)
 
 # Graph
 ```{r}
-# 1. THE PLOT CODE (No ggthemes needed)
-ggplot(master_analysis, aes(x = oil_status, y = crime_volume, fill = oil_status)) +
+# 1. THE PLOT CODE (Using the Cleaned Data)
+ggplot(master_analysis_cleaned, aes(x = oil_status, y = crime_volume, fill = oil_status)) +
   # The Violin: Shows the "shape" and density of 852k reports
   geom_violin(alpha = 0.5, color = "white") + 
   # The Boxplot: Provides the formal median and quartiles
   geom_boxplot(width = 0.1, color = "black", outlier.shape = 16, outlier.size = 1, outlier.alpha = 0.1) +
-  # The Colors: Using a bold Red vs. Professional Blue
+  # The Colors
   scale_fill_manual(values = c("High_Oil" = "#E31A1C", "Low_Oil" = "#1F78B4")) +
   # The Storytelling Labels
   labs(
-    title = "Energy Costs vs. Public Safety: The Dallas Correlation",
-    subtitle = "Welch Two-Sample T-Test | t-score = 5.57 | p < 0.0000001",
+    title = "Oil Prices vs. Public Safety: The Dallas Correlation",
+    # CRITICAL: Make sure to update these stats to match your new T-test results!
+    subtitle = "Welch Two-Sample T-Test | t-score = [INSERT_NEW_T] | p < [INSERT_NEW_P]",
     x = "Oil Price Status (Split at Median: $71.68)",
     y = "Daily Reported Incidents",
   ) +
-  # 2. THE CUSTOM THEME (Making it look "Blow People Away" manually)
   theme_minimal(base_size = 14) +
   theme(
     legend.position = "none",
@@ -104,10 +118,8 @@ ggplot(master_analysis, aes(x = oil_status, y = crime_volume, fill = oil_status)
     plot.subtitle = element_text(size = 12, color = "#555555"),
     axis.title = element_text(face = "bold"),
     panel.grid.minor = element_blank(),
-    panel.grid.major.x = element_blank() # Cleans up the vertical lines
+    panel.grid.major.x = element_blank()
   )
-
-# we are using a Welch Two-Sample T_Test, because it doesn't assume equal variance between the two groups, making the results more robust for large real-world datasets like the Dallas Open Data.
 ```
 
 # the reason we are using the boxplot is to show the median, IQR, range, and the outliers
