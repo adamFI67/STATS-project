@@ -1,0 +1,129 @@
+---
+title: "Why Crimes are Occuring in Dallas"
+author: "Rishi Natarajan"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+
+Our study focuses specifically on Crude Oil Prices as a high-frequency economic indicator. Unlike quarterly GDP or monthly Unemployment reports, oil prices fluctuate daily, providing a real-time 'stress test' for urban environments like Dallas.
+
+```{r}
+# Loading all the required libararies
+library(ggplot2) # For plotting
+library(dplyr) # For signifigance test
+library(lubridate) # For making program able to read dates from Dallas_Crimes dataset
+```
+
+
+```{r}
+# --- 2. LOAD & CLEAN OIL DATA ---
+oil_raw <- read.csv("Crude_Oil_Prices.csv")
+
+# Cleans dataset to make everything more readable
+oil_price_data <- oil_raw %>%
+  mutate(date_clean = as.Date(observation_date),
+         price = as.numeric(DCOILWTICO)) %>%
+  filter(date_clean >= "2020-01-01") %>% 
+  filter(!is.na(price))
+
+# Calculate the Median ($71.68)
+oil_median_value <- median(oil_price_data$price, na.rm = TRUE)
+```
+
+```{r}
+# --- 3. LOAD & CLEAN DALLAS CRIME DATA ---
+dallas_raw <- read.csv("../Dallas_Crimes_dallas_Website_For_Where.csv")
+
+# Turn 852k rows into a Daily Count
+daily_summary <- dallas_raw %>%
+  mutate(date_clean = as.Date(Date1.of.Occurrence)) %>% 
+  group_by(date_clean) %>%
+  summarize(crime_volume = n()) %>%
+  filter(!is.na(date_clean))
+
+head(daily_summary)
+```
+
+```{r}
+# --- 4. THE JOIN (The Handshake) ---
+master_analysis <- daily_summary %>%
+  inner_join(oil_price_data, by = "date_clean")
+
+```
+
+```{r}
+# --- 5. THE GROUPING (Creating the 2 Levels) ---
+master_analysis <- master_analysis %>%
+  mutate(oil_status = ifelse(price > oil_median_value, "High_Oil", "Low_Oil")) %>%
+  filter(!is.na(oil_status)) %>%
+  mutate(oil_status = as.factor(oil_status))
+
+head(master_analysis)
+```
+
+```{r}
+# --- 6. REMOVE OUTLIERS (IQR METHOD) ---
+# Calculate Q1, Q3, and IQR for crime_volume
+Q1 <- quantile(master_analysis$crime_volume, 0.25)
+Q3 <- quantile(master_analysis$crime_volume, 0.75)
+IQR_val <- Q3 - Q1
+
+# Define lower and upper bounds
+lower_bound <- Q1 - 1.5 * IQR_val
+upper_bound <- Q3 + 1.5 * IQR_val
+
+# Filter the dataset
+master_analysis_cleaned <- master_analysis %>%
+  filter(crime_volume >= lower_bound & crime_volume <= upper_bound)
+
+# --- 7. RUN T-TEST ON CLEANED DATA ---
+t_result <- t.test(crime_volume ~ oil_status, data = master_analysis_cleaned)
+print(t_result)
+
+# --- 8. THE RESULTS FOR YOUR SLIDES ---
+print(paste("The Median Oil Price is:", oil_median_value))
+print(t_result)
+```
+
+# Based on our two sided t-test, we got a p-value of 2.984e-08, which is much less than 0.05. This is statistically signifigant and this means we have to reject the null hypothesis which was the oil and dallas crimes have no corelation
+# There are approximately 13 more crimes commited per day duirng times of high oil prices comapred to low oil prices, which suggests there is a strong positive corelation between oil prices and the amount of crime commited in the city of dallas
+
+
+
+# Graph
+```{r}
+# 1. THE PLOT CODE (Using the Cleaned Data)
+ggplot(master_analysis_cleaned, aes(x = oil_status, y = crime_volume, fill = oil_status)) +
+  # The Violin: Shows the "shape" and density of 852k reports
+  geom_violin(alpha = 0.5, color = "white") + 
+  # The Boxplot: Provides the formal median and quartiles
+  geom_boxplot(width = 0.1, color = "black", outlier.shape = 16, outlier.size = 1, outlier.alpha = 0.1) +
+  # The Colors
+  scale_fill_manual(values = c("High_Oil" = "#E31A1C", "Low_Oil" = "#1F78B4")) +
+  # The Storytelling Labels
+  labs(
+    title = "Oil Prices vs. Public Safety: The Dallas Correlation",
+    # CRITICAL: Make sure to update these stats to match your new T-test results!
+    subtitle = "Welch Two-Sample T-Test | t-score = [INSERT_NEW_T] | p < [INSERT_NEW_P]",
+    x = "Oil Price Status (Split at Median: $71.68)",
+    y = "Daily Reported Incidents",
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 16, color = "#222222"),
+    plot.subtitle = element_text(size = 12, color = "#555555"),
+    axis.title = element_text(face = "bold"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  )
+```
+
+# the reason we are using the boxplot is to show the median, IQR, range, and the outliers
+# the reason we are using the violin plot is to show the distribution (Probability desnity) which is the width of the bell. The main thing to note here is even though they both are bell-shaped which shows they have a relativley normal distribution, the fatness of the violin shows that the probability of a higher number of crimes occurring (around 373) is now much more likely than it was when oil prices were low.
+
+
+# Future Plans: Rather than just using oil, we would like to use other variables to determine whether crime occurs more during an ecenomically bad period. Although oil prices is one of the main factors, alone it is not enought to conclude how bad the economic period really is. We would need more data such as inflation rates and unemployment data. We could also use a linear regression model to predict how much more crime could be commited based on how much the previous data increased.

@@ -1,0 +1,79 @@
+---
+title: "Why Crimes are Occuring in Dallas"
+author: "Rishi Natarajan"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+Original Datasets:
+Oil Dataset: https://fred.stlouisfed.org/series/DCOILWTICO#
+Dallas Crimes Dataset: https://www.dallasopendata.com/Public-Safety/Police-Incidents/qv6i-rri7/about_data
+
+
+
+Our study focuses specifically on Crude Oil Prices as a high-frequency economic indicator. Unlike quarterly GDP or monthly Unemployment reports, oil prices fluctuate daily, providing a real-time 'stress test' for urban environments like Dallas.
+
+```{r}
+# Loading all the required libararies
+library(ggplot2) # For plotting
+library(dplyr) # For signifigance test
+library(lubridate) # For making program able to read dates from Dallas_Crimes dataset
+```
+
+
+
+This is our Oil dataset, and this only has two variables, which are the date and the oil price. The column where the oil prices was called DCOILWTICO. I first decided to convert the date from a character to a date object, so I can compare it to the dallas crimes dataset. I decided to convert them from Characters to Numeric, so that we can see the NA values since they can't be converted. After this, I used the filter function in order to only have dates greater than or equal to 1/1/2020, because we are looking at dates greater than or equal to this day to try and get recent data. I finally then used the filter functions to get rid of the NA's for Oil prices,since they are not diplayed on holidays. I then get the median value of oil prices, because the mean will most likely be skewed (This is useful for later)
+```{r}
+# --- 2. LOAD & CLEAN OIL DATA ---
+oil_raw <- read.csv("../Crude_Oil_Prices.csv")
+
+# Cleans dataset to make everything more readable
+oil_price_data <- oil_raw %>%
+  mutate(date_clean = as.Date(observation_date),
+         price = as.numeric(DCOILWTICO)) %>%
+  filter(date_clean >= "2020-01-01") %>% 
+  filter(!is.na(price))
+
+# Calculate the Median ($71.68)
+oil_median_value <- median(oil_price_data$price, na.rm = TRUE)
+```
+
+This is our Dallas Crime Dataset, and this is what I used for my crime statistics. I first convert the date of occurence into a date object, so this way, we can group the date with the dallas crimes date. next, I group crimes based on the day they happened by using the group_by function. Then I use the summarize function to agregate the data and remove the summaries and count how many crimes occur on that specific date. Finally I get rid of any potential NA options that occur because the dataset is so masisve, so I do no want to take any chances.
+```{r}
+# --- 3. LOAD & CLEAN DALLAS CRIME DATA ---
+dallas_raw <- read.csv("../Dallas_Crimes_dallas_Website.csv")
+
+# Turn 852k rows into a Daily Count
+daily_summary <- dallas_raw %>%
+  mutate(date_clean = as.Date(Date1.of.Occurrence)) %>% 
+  group_by(date_clean) %>%
+  summarize(crime_volume = n()) %>%
+  filter(!is.na(date_clean))
+
+head(daily_summary)
+```
+
+This is where we join the new Oil table and the new Dallas crime table. We call this table master analysis. then we use an inner join to join both the tables, because this allows only the tables that exist in both datasets to remain. I will use this table to preform my data analysis.
+```{r}
+# --- 4. THE JOIN (The Handshake) ---
+master_analysis <- daily_summary %>%
+  inner_join(oil_price_data, by = "date_clean")
+
+```
+
+Finally, I edit the final table to get it ready for the data analysis. I first split the oil-status variable into High_Oil and Low_Oil, and this is because we want to split it into these two categories based on the median. I then get rid of any NA rows, and this is just another safety measure just in case. I finally convert the oil status to a factor variable so we can assign levels to both high oil and low oil
+```{r}
+# --- 5. THE GROUPING (Creating the 2 Levels) ---
+master_analysis <- master_analysis %>%
+  mutate(oil_status = ifelse(price > oil_median_value, "High_Oil", "Low_Oil")) %>%
+  filter(!is.na(oil_status)) %>%
+  mutate(oil_status = as.factor(oil_status))
+
+head(master_analysis)
+```
+
+
+
+

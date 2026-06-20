@@ -1,13 +1,8 @@
-# Secrets
+# Local datasets and large files — not pushed to GitHub
+.DS_Store
+Crude_Oil_Prices.csv
+Dallas Crimes Project Proposal.pdf
+Dallas_Crimes_dallas_Website_For_Where.csv
+STAT 3355 Project Slides.pdf
 .env
 
-# macOS
-.DS_Store
-
-# Large / local data (do not push)
-Crude_Oil_Prices.csv
-Dallas_Crimes_dallas_Website.csv
-
-# Local PDFs you don’t want in the repo (optional — remove a line if you want to track that file)
-Dallas Crimes Project Proposal.pdf
-STAT 3355 Project Slides.pdf
